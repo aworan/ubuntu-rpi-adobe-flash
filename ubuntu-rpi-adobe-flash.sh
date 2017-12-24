@@ -1,8 +1,24 @@
 #!/bin/bash
 mkdir /tmp/abode-flash-rpi
 cd /tmp/abode-flash-rpi
-wget http://archive.raspberrypi.org/debian/pool/ui/r/rpi-chromium-mods/rpi-chromium-mods_20170418.tar.xz
-tar Jxvf rpi-chromium-mods_20170418.tar.xz
+# Check if the site can be reached
+wget --spider --user-agent="Mozilla/5.0 Gecko/20100101" --timeout=30 -q "https://archive.raspberrypi.org/debian/pool/ui/r/rpi-chromium-mods" -O /dev/null
+    if [[ "$?" -ne "0" ]]; then
+        echo -e "Can't connect to https://archive.raspberrypi.org server site\nMake sure the internet connection is up and active"
+        exit 1
+    fi
+# Fetch the latest version file name
+FLASH_CURRENT="$(wget -O- -q https://archive.raspberrypi.org/debian/pool/ui/r/rpi-chromium-mods/ 2>/dev/null \
+                 | awk '{gsub(/ *<[^>]*> */," "); if($1~"tar.xz"){print $1}}' \
+		 | sort \
+		 | tail -1)"
+# Download
+wget "https://archive.raspberrypi.org/debian/pool/ui/r/rpi-chromium-mods/$FLASH_CURRENT"
+    if [[ "$?" -ne "0" ]]; then
+        echo -e "Could not download $FLASH_CURRENT"
+        exit 1
+    fi
+tar Jxvf "$FLASH_CURRENT"
 if [ ! -d /usr/lib/PepperFlash ]; then
 	mkdir /usr/lib/PepperFlash
 fi
